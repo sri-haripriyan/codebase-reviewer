@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     GITHUB_CLONE_TIMEOUT_SECONDS: int = 60
     TEMP_WORKSPACE_DIR: str | None = None
 
+    # Semantic Chunking Configuration
+    CHUNK_MAX_LINES: int = 120
+    CHUNK_MIN_LINES: int = 5
+    CHUNK_OVERLAP_LINES: int = 15
+    CHUNK_MAX_CHARS: int = 4000
+
     # Frontend Settings
     FRONTEND_PORT: int = 8501
     BACKEND_API_URL: str = "http://127.0.0.1:8000"

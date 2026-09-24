@@ -17,6 +17,13 @@ dependencies = [
     "asyncpg>=0.29.0",
     "psycopg[binary]>=3.2.1",
     "pgvector>=0.3.5",
+    "tree-sitter>=0.22.0",
+    "tree-sitter-python>=0.23.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+    "tree-sitter-java>=0.23.0",
+    "tree-sitter-c-sharp>=0.23.0",
+    "tree-sitter-go>=0.23.0",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +49,7 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["tests/fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP"]
