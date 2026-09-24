@@ -54,17 +54,37 @@ class Settings(BaseSettings):
         "http://localhost:8000",
     ]
 
-    # Local PostgreSQL Settings (for future database integration)
+    # Local PostgreSQL Settings
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "codebase_reviewer"
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/codebase_reviewer"
+    POSTGRES_PASSWORD: str = "root"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:root@localhost:5432/codebase_reviewer"
+    POSTGRES_POOL_SIZE: int = 10
+    POSTGRES_MAX_OVERFLOW: int = 20
+    POSTGRES_POOL_TIMEOUT: int = 30
+
+    # Vector Embedding Settings
+    # Default dimension matches standard OpenAI text-embedding-3-small (1536).
+    # Configurable via EMBEDDING_DIMENSION env var for other embedding providers.
+    EMBEDDING_DIMENSION: int = 1536
 
     # Frontend Settings
     FRONTEND_PORT: int = 8501
     BACKEND_API_URL: str = "http://127.0.0.1:8000"
+
+    @property
+    def SYNC_DATABASE_URL(self) -> str:
+        """Return synchronous database connection string for Alembic migrations."""
+        if self.DATABASE_URL.startswith("postgresql+asyncpg://"):
+            return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+        if self.DATABASE_URL.startswith("postgresql://"):
+            return self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+        return (
+            f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
 
 @lru_cache
