@@ -34,10 +34,27 @@ def create_app() -> FastAPI:
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
-        docs_url=f"{settings.API_V1_STR}/docs" if settings.DEBUG else None,
+        docs_url=None,
         redoc_url=f"{settings.API_V1_STR}/redoc" if settings.DEBUG else None,
         lifespan=lifespan,
     )
+
+    if settings.DEBUG:
+        from fastapi.openapi.docs import get_swagger_ui_html
+        from fastapi.responses import RedirectResponse
+
+        @application.get(f"{settings.API_V1_STR}/docs", include_in_schema=False)
+        async def custom_swagger_ui_html():
+            return get_swagger_ui_html(
+                openapi_url=f"{settings.API_V1_STR}/openapi.json",
+                title=f"{settings.PROJECT_NAME} - Swagger UI",
+                swagger_js_url="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.18.2/swagger-ui-bundle.js",
+                swagger_css_url="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.18.2/swagger-ui.min.css",
+            )
+
+        @application.get("/docs", include_in_schema=False)
+        async def docs_redirect():
+            return RedirectResponse(url=f"{settings.API_V1_STR}/docs")
 
     # Configure CORS
     if settings.BACKEND_CORS_ORIGINS:
