@@ -70,6 +70,13 @@ class Settings(BaseSettings):
     # Configurable via EMBEDDING_DIMENSION env var for other embedding providers.
     EMBEDDING_DIMENSION: int = 1536
 
+    # Ingestion & Security Guardrails
+    MAX_ZIP_UPLOAD_SIZE_BYTES: int = 50 * 1024 * 1024  # 50 MB
+    MAX_EXTRACTED_SIZE_BYTES: int = 250 * 1024 * 1024  # 250 MB (prevents zip bomb)
+    MAX_FILES_COUNT: int = 10_000  # Max files allowed per project
+    GITHUB_CLONE_TIMEOUT_SECONDS: int = 60
+    TEMP_WORKSPACE_DIR: str | None = None
+
     # Frontend Settings
     FRONTEND_PORT: int = 8501
     BACKEND_API_URL: str = "http://127.0.0.1:8000"
