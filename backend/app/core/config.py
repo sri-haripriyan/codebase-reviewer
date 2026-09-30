@@ -65,10 +65,20 @@ class Settings(BaseSettings):
     POSTGRES_MAX_OVERFLOW: int = 20
     POSTGRES_POOL_TIMEOUT: int = 30
 
-    # Vector Embedding Settings
+    # Vector Embedding & Provider Settings
     # Default dimension matches standard OpenAI text-embedding-3-small (1536).
     # Configurable via EMBEDDING_DIMENSION env var for other embedding providers.
     EMBEDDING_DIMENSION: int = 1536
+    EMBEDDING_PROVIDER: str = "fastembed"  # "fastembed", "deterministic", "mock"
+    EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
+    EMBEDDING_BATCH_SIZE: int = 32
+    EMBEDDING_MAX_RETRIES: int = 3
+    EMBEDDING_RETRY_BACKOFF_FACTOR: float = 0.5
+
+    # Code Retrieval Settings
+    RETRIEVAL_TOP_K: int = 10
+    RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.2
+    RETRIEVAL_HYBRID_ALPHA: float = 0.7  # Weight for vector similarity in hybrid search
 
     # Ingestion & Security Guardrails
     MAX_ZIP_UPLOAD_SIZE_BYTES: int = 50 * 1024 * 1024  # 50 MB
