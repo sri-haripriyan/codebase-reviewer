@@ -80,6 +80,14 @@ class Settings(BaseSettings):
     RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.2
     RETRIEVAL_HYBRID_ALPHA: float = 0.7  # Weight for vector similarity in hybrid search
 
+    # LLM & Conversational Q&A Settings
+    LLM_PROVIDER: str = "mock"  # "mock", "openai", "ollama"
+    LLM_MODEL_NAME: str = "gpt-4o-mini"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_API_BASE: str | None = None
+    LLM_TEMPERATURE: float = 0.1
+    LLM_MAX_TOKENS: int = 1500
+
     # Ingestion & Security Guardrails
     MAX_ZIP_UPLOAD_SIZE_BYTES: int = 50 * 1024 * 1024  # 50 MB
     MAX_EXTRACTED_SIZE_BYTES: int = 250 * 1024 * 1024  # 250 MB (prevents zip bomb)

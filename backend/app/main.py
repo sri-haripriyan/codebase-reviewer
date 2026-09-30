@@ -82,8 +82,12 @@ def create_app() -> FastAPI:
             version=settings.VERSION,
         )
 
+    from backend.app.api.v1.endpoints.projects import router as projects_router
+
     # Mount API v1 router
     application.include_router(api_router, prefix=settings.API_V1_STR)
+    # Also mount /projects at root level for direct endpoint access
+    application.include_router(projects_router, prefix="/projects", tags=["Projects", "Chat"])
 
     return application
 

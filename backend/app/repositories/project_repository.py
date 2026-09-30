@@ -21,6 +21,10 @@ class ProjectRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get(self, project_id: uuid.UUID) -> Project | None:
+        """Alias for get_by_id to conform with repository interface."""
+        return await self.get_by_id(project_id)
+
     async def get_by_name(self, name: str) -> Project | None:
         """Fetch project by unique name."""
         stmt = select(Project).where(Project.name == name)
