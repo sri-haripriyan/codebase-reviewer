@@ -1,7 +1,10 @@
-"""Placeholder nodes for LangGraph codebase analysis workflow."""
+"""Nodes for LangGraph codebase analysis workflow integrating specialized agents."""
 
+import asyncio
+import concurrent.futures
 from typing import Any
 
+from backend.app.agents.factory import get_analysis_agents
 from backend.app.core.logging import get_logger
 from backend.app.graph.state import CodebaseAnalysisState
 
@@ -56,34 +59,96 @@ def prepare_analysis(state: CodebaseAnalysisState) -> dict[str, Any]:
     return {"retrieved_evidence": evidence}
 
 
-def analysis(state: CodebaseAnalysisState) -> dict[str, Any]:
-    """Placeholder for specialized analysis agents (architecture, security, quality)."""
-    logger.info("Running codebase analysis agents for iteration %d", state.get("iteration", 1))
+AGENT_DOMAIN_MAP = {
+    "ExplorerAgent": "explorer",
+    "ArchitectureAgent": "architecture",
+    "SecurityAgent": "security",
+    "TestingQualityAgent": "testing_quality",
+}
 
-    results = {
-        "architecture": {
-            "status": "completed",
-            "summary": "Modular service-oriented architecture with clean separation of concerns.",
-            "patterns": ["Repository pattern", "Dependency Injection"],
-        },
-        "code_quality": {
-            "status": "completed",
-            "summary": "Strict type hints, PEP 8 compliance, and thorough test coverage.",
-            "metrics": {"maintainability": "high", "complexity": "low"},
-        },
-        "security": {
-            "status": "completed",
-            "summary": "Robust input validation, parameter sanitization, and secure auth.",
-            "vulnerabilities_detected": 0,
-        },
-        "dependencies": {
-            "status": "completed",
-            "summary": "Pinned dependencies with zero critical CVEs.",
-            "outdated_count": 0,
-        },
+
+async def async_analysis(state: CodebaseAnalysisState) -> dict[str, Any]:
+    """Execute specialized analysis agents concurrently with fault tolerance."""
+    project_id = state.get("project_id", "")
+    user_request = state.get("user_request", "")
+    iteration = state.get("iteration", 1)
+
+    logger.info(
+        "Executing concurrent analysis agents for project %s (iter %d)",
+        project_id,
+        iteration,
+    )
+
+    agents = get_analysis_agents()
+    context = {
+        "repository_summary": state.get("repository_summary", {}),
+        "iteration": iteration,
+        "human_feedback": state.get("human_feedback"),
+        "retrieved_evidence": state.get("retrieved_evidence", []),
     }
 
-    return {"agent_results": results}
+    # Execute all independent domain agents concurrently
+    tasks = [agent.analyze(project_id, user_request, context) for agent in agents]
+    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    agent_results: dict[str, Any] = dict(state.get("agent_results") or {})
+    accumulated_evidence: list[dict[str, Any]] = list(state.get("retrieved_evidence") or [])
+    errors: list[str] = []
+
+    for agent, result in zip(agents, raw_results):
+        domain_key = AGENT_DOMAIN_MAP.get(
+            agent.agent_name, agent.agent_name.lower().replace("agent", "")
+        )
+        if isinstance(result, Exception):
+            error_msg = f"Agent '{agent.agent_name}' failed: {result}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+            agent_results[domain_key] = {
+                "agent_name": agent.agent_name,
+                "status": "failed",
+                "summary": f"Analysis failed: {result}",
+                "findings": [],
+                "errors": [str(result)],
+            }
+        else:
+            agent_results[domain_key] = result.model_dump()
+            if domain_key == "testing_quality":
+                agent_results["code_quality"] = agent_results["testing_quality"]
+
+            # Preserve evidence discovered by agent findings
+            for finding in result.findings:
+                if finding.file_path and finding.evidence:
+                    accumulated_evidence.append(
+                        {
+                            "file_path": finding.file_path,
+                            "symbol": finding.title,
+                            "start_line": finding.start_line,
+                            "end_line": finding.end_line,
+                            "content": finding.evidence,
+                        }
+                    )
+
+    updates: dict[str, Any] = {
+        "agent_results": agent_results,
+        "retrieved_evidence": accumulated_evidence,
+    }
+    if errors:
+        updates["errors"] = errors
+    return updates
+
+
+def analysis(state: CodebaseAnalysisState) -> dict[str, Any]:
+    """Execute analysis agents concurrently, supporting sync and async callers."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, async_analysis(state)).result()
+    else:
+        return asyncio.run(async_analysis(state))
 
 
 def report_generation(state: CodebaseAnalysisState) -> dict[str, Any]:
@@ -98,7 +163,7 @@ def report_generation(state: CodebaseAnalysisState) -> dict[str, Any]:
         "iteration": iteration,
         "executive_summary": (
             f"Analysis performed for request: '{state.get('user_request')}'. "
-            "Architecture and security posture meet production standards."
+            "Specialized agents evaluated architecture, security, quality, and structure."
         ),
         "sections": state.get("agent_results", {}),
         "evidence_count": len(state.get("retrieved_evidence", [])),

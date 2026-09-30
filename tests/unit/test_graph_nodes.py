@@ -46,17 +46,17 @@ def test_prepare_analysis():
 
 
 def test_analysis_placeholder_agent_results():
-    """Verify analysis generates placeholder agent results for all core domains."""
+    """Verify analysis executes specialized agents for all core domains."""
     state = create_initial_state(project_id="proj-1")
     updates = analysis(state)
 
     assert "agent_results" in updates
     results = updates["agent_results"]
+    assert "explorer" in results
     assert "architecture" in results
-    assert "code_quality" in results
     assert "security" in results
-    assert "dependencies" in results
-    assert results["security"]["vulnerabilities_detected"] == 0
+    assert "testing_quality" in results
+    assert len(results["security"]["positive_security_controls"]) > 0
 
 
 def test_report_generation():
